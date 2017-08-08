@@ -1,0 +1,71 @@
+################################################################################
+# host => gateway: notification: wakeup-change
+################################################################################
+#
+# {
+#     "notification": "wakeup-change",
+#     "data": {
+#         "wakeup": True,
+#     },
+# }
+#
+################################################################################
+# host => gateway: command: wakeup
+################################################################################
+#
+#
+# Request:
+# {
+#     "command": "wakeup",
+#     "data": {
+#         "hostname": "abcd",
+#     },
+# }
+# Response:
+# {
+#     "return": {
+#     },
+# }
+# Response:
+# {
+#     "error": "wakup timeout",
+# }
+# Response:
+# {
+#     "error": "network error",
+# }
+#
+################################################################################
+# gateway => gateway: command: wakeup
+################################################################################
+#
+# same as "host => gateway: command: wakeup"
+#
+################################################################################
+# cascade-client => cascade-server: notification: router-client-change
+################################################################################
+#
+# {
+#     "notification": "router-client-change",
+#     "data": {
+#         "c5facfa6-d8c3-4bce-ac13-6abab49c86fc" : {
+#             "client-list": {
+#                 "1.2.3.4": {
+#                     "hostname": "abcd",
+#                     "wakeup": True,
+#                 },
+#                 "1.2.3.5": {
+#                     "hostname": "abcd",
+#                     /* no "wakeup" key means wakup is not supported */
+#                 },
+#             },
+#         ],
+#     },
+# }
+#
+################################################################################
+# cascade-server => cascade-client: notification: router-client-change
+################################################################################
+#
+# same as "cascade-client => cascade-server: notification: router-client-change"
+#
