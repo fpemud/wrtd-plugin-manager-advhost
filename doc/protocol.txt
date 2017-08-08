@@ -1,5 +1,6 @@
 ################################################################################
-# host => gateway: notification: wakeup-change
+# channel: advhost
+# host2gateway: notification: wakeup-change
 ################################################################################
 #
 # {
@@ -10,7 +11,8 @@
 # }
 #
 ################################################################################
-# host => gateway: command: wakeup
+# channel: advhost
+# host2gateway: command: wakeup
 ################################################################################
 #
 #
@@ -36,36 +38,96 @@
 # }
 #
 ################################################################################
-# gateway => gateway: command: wakeup
+# channel: advhost
+# host2gateway: command: get-host-list
 ################################################################################
 #
-# same as "host => gateway: command: wakeup"
-#
-################################################################################
-# cascade-client => cascade-server: notification: router-client-change
-################################################################################
-#
+# Request:
 # {
-#     "notification": "router-client-change",
-#     "data": {
-#         "c5facfa6-d8c3-4bce-ac13-6abab49c86fc" : {
-#             "client-list": {
-#                 "1.2.3.4": {
-#                     "hostname": "abcd",
-#                     "wakeup": True,
-#                 },
-#                 "1.2.3.5": {
-#                     "hostname": "abcd",
-#                     /* no "wakeup" key means wakup is not supported */
-#                 },
-#             },
-#         ],
+#     "command": "get-host-list",
+# }
+# Response:
+# {
+#     "return": {
+#         "1.2.3.4": {
+#             "hostname": "abcd",
+#             "mac": "01-02-03-04-05-06",
+#         },
+#         "2.3.4.5": {
+#             "through-vpn": true,
+#             "mac": "01-02-03-04-05-06",
+#             "wakeup": True,
+#         },
+#         "3.4.5.6": {
+#         },
 #     },
 # }
 #
 ################################################################################
-# cascade-server => cascade-client: notification: router-client-change
+# channel: advhost
+# host2gateway: command: get-network-list
 ################################################################################
 #
-# same as "cascade-client => cascade-server: notification: router-client-change"
+# Request:
+# {
+#     "command": "get-network-list",
+# }
+# Response:
+# {
+#     "return": [
+#         "1.0.0.0/255.0.0.0",
+#         "2.0.0.0/255.0.0.0",
+#     ]
+#
+################################################################################
+# channel: advhost
+# gateway2host: notification: host-add
+################################################################################
+#
+# {
+#     "notify": "host-add",
+#     "data": {
+#         "1.2.3.4": {
+#             "hostname": "abcd",
+#             "mac": "01-02-03-04-05-06",
+#             "wakeup": True,
+#         },
+#     },
+# }
+#
+################################################################################
+# channel: advhost
+# gateway2host: notification: host-change
+################################################################################
+#
+# {
+#     "notify": "host-change",
+#     "data": {
+#         "1.2.3.4": {
+#             "hostname": "abcd",
+#             "mac": "01-02-03-04-05-06",
+#         },
+#     },
+# }
+#
+################################################################################
+# channel: advhost
+# gateway2host: notification: host-remove
+################################################################################
+#
+# {
+#     "notify": "host-remove",
+#     "data": [
+#         "1.2.3.4",
+#     ],
+# }
+#
+
+
+################################################################################
+# channel: gwim
+# gateway2gateway: command: wakeup
+################################################################################
+#
+# same as "channel: advhost, host2gateway: command: wakeup"
 #
