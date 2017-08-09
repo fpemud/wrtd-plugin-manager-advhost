@@ -26,6 +26,10 @@ def get_plugin(name):
 
 class _PluginObject:
 
+    @property
+    def init_after(self):
+        return ["apiserver", "cascade"]
+
     def init2(self, cfg, tmpDir, varDir, data):
         self.param = data
         self.logger = logging.getLogger(self.__module__ + "." + self.__class__.__name__)

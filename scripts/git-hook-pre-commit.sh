@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LIBFILES="$(find ./manager_apiserver -name '*.py' | tr '\n' ' ')"
+LIBFILES="$(find ./manager_advhost -name '*.py' | tr '\n' ' ')"
 ERRFLAG=0
 
 OUTPUT=`pyflakes ${LIBFILES} 2>&1`
