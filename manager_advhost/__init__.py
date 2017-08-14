@@ -28,7 +28,7 @@ class _PluginObject:
         self.param = data
         self.logger = logging.getLogger(self.__module__ + "." + self.__class__.__name__)
 
-        self.apiPort = 2221
+        self.apiPort = 2222
         self.apiServer = None
 
         self.clientList = dict()                   # ip-data-dict
