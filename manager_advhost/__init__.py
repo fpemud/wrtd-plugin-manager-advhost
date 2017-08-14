@@ -294,6 +294,7 @@ class _ApiServerProcessor(msghole.EndPoint):
         self.serverObj = serverObj
 
         self.peer_ip = conn.get_remote_address().get_address().to_string()
+        self.peer_port = conn.get_remote_address().get_port()
 
         super().set_iostream_and_start(conn)
 
@@ -302,6 +303,7 @@ class _ApiServerProcessor(msghole.EndPoint):
 
     def on_close(self):
         self.logger.info("Advanced host %s disconnected." % (self.peer_ip))
+        self.param.managers["lan"].remove_client_property(self.peer_ip, str(self.peer_port))
         self.serverObj.sprocList.remove(self)
 
     def on_command_get_network_list(self, data, return_callback, error_callback):
@@ -319,4 +321,4 @@ class _ApiServerProcessor(msghole.EndPoint):
             raise
 
     def on_notification_host_property_change(self, data):
-        pass
+        self.param.managers["lan"].set_client_property(self.peer_ip, str(self.peer_port), data)
