@@ -218,7 +218,7 @@ class _PluginObject:
 
         # update client list, get notification data
         data3 = []
-        for router_id, data2 in data:
+        for router_id, data2 in data.items():
             for ip in data2["client-list"]:
                 del self.cascadeClientListDict[ip]
             data3 += data2["client-list"]
