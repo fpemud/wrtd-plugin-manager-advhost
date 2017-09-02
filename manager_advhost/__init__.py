@@ -268,7 +268,7 @@ class _ApiServer:
         peer_port = conn.get_remote_address().get_port()
 
         bFound = False
-        bridgeList = [self.param.managers["lan"].default_bridge] + [x.get_bridge() for x in self.param.managers["lan"].vpnsPluginList]
+        bridgeList = [self.param.managers["lan"].defaultBridge] + [x.get_bridge() for x in self.param.managers["lan"].vpnsPluginList]
         for bridge in bridgeList:
             netobj = ipaddress.IPv4Network(bridge.get_prefix()[0] + "/" + bridge.get_prefix()[1])
             if ipaddress.IPv4Address(peer_ip) in netobj:
