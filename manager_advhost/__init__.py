@@ -311,17 +311,25 @@ class _ApiServerProcessor(msghole.EndPoint):
 
     def on_command_get_network_list(self, data, return_callback, error_callback):
         try:
-            return_callback(self.pObj._getNetworkList())
+            self.logger.debug("Command \"get-network-list\" received from \"%s:%d\"." % (self.peer_ip, self.peer_port))
+            ret = self.pObj._getNetworkList()
+            self.logger.debug("Command execution completed.")
+            return_callback(ret)
         except:
             error_callback("internal error")
             raise
 
     def on_command_get_host_list(self, data, return_callback, error_callback):
         try:
-            return_callback(self.pObj._getHostList())
+            self.logger.debug("Command \"get-host-list\" received from \"%s:%d\"." % (self.peer_ip, self.peer_port))
+            ret = self.pObj._getHostList()
+            self.logger.debug("Command execution completed.")
+            return_callback(ret)
         except:
             error_callback("internal error")
             raise
 
     def on_notification_host_property_change(self, data):
+        self.logger.debug("Notification \"host-property-change\" received from \"%s:%d\"." % (self.peer_ip, self.peer_port))
         self.param.managers["lan"].set_client_property(self.peer_ip, str(self.peer_port), data)
+        self.logger.debug("Notification process completed.")
