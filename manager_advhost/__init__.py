@@ -265,6 +265,7 @@ class _ApiServer:
     def _on_accept(self, source_object, res):
         conn, dummy = source_object.accept_finish(res)
         peer_ip = conn.get_remote_address().get_address().to_string()
+        peer_port = conn.get_remote_address().get_port()
 
         bFound = False
         bridgeList = [self.param.managers["lan"].default_bridge] + [x.get_bridge() for x in self.param.managers["lan"].vpnsPluginList]
@@ -274,11 +275,13 @@ class _ApiServer:
                 bFound = True
                 break
         if not bFound:
-            self.logger.error("Advanced host %s rejected, invalid IP address." % (peer_ip))
+            self.logger.error("Advanced host \"%s:%d\" rejected, invalid IP address." % (peer_ip, peer_port))
             conn.close()
             return
 
         self.sprocList.append(_ApiServerProcessor(self.pObj, self, conn))
+        self.logger.info("Advanced host \"%s:%d\" connected." % (peer_ip, peer_port))
+
         self.serverListener.accept_async(None, self._on_accept)
 
 
@@ -299,10 +302,10 @@ class _ApiServerProcessor(msghole.EndPoint):
         super().set_iostream_and_start(conn)
 
     def on_error(self, e):
-        self.logger.error("Error occured in server processor for advanced host \"%s\"" % (self.peer_ip), exc_info=True)
+        self.logger.error("Error occured in server processor for advanced host \"%s:%d\"" % (self.peer_ip, self.peer_port), exc_info=True)
 
     def on_close(self):
-        self.logger.info("Advanced host %s disconnected." % (self.peer_ip))
+        self.logger.info("Advanced host \"%s:%d\" disconnected." % (self.peer_ip, self.peer_port))
         self.param.managers["lan"].remove_client_property(self.peer_ip, str(self.peer_port))
         self.serverObj.sprocList.remove(self)
 
