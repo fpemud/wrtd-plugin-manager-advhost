@@ -33,6 +33,8 @@ class _PluginObject:
 
         self.clientList = dict()                   # ip-data-dict
 
+        self.downstreamRouterIp = []
+
         self.cascadeRouter = dict()                # dict<peer-uuid, list<router-id>>
         self.cascadeLanPrefixListDict = dict()     # dict<router-id, list<lan-prefix>>
         self.cascadeClientListDict = dict()        # dict<router-id, client-ip-data-dict>
@@ -101,10 +103,18 @@ class _PluginObject:
         self._cascadePeerRouterClientRemove(api_client.peer_uuid, data)
 
     def on_cascade_downstream_up(self, sproc, data):
+        # check
+        for sproc2 in self.apiServer.sprocList:
+            if sproc2.peer_ip == sproc.peer_ip:
+                raise msghole.BusinessException("no connection is allowed between routers")
+
+        # process
+        self.downstreamRouterIp.append(sproc.peer_ip)
         self._cascadePeerUp(sproc.peer_uuid, data)
 
     def on_cascade_downstream_down(self, sproc):
         self._cascadePeerRouterDown(sproc.peer_uuid)
+        self.downstreamRouterIp.remove(sproc.peer_ip)
 
     def on_cascade_downstream_router_add(self, sproc, data):
         self._cascadePeerRouterAdd(sproc.peer_uuid, data)
@@ -267,6 +277,11 @@ class _ApiServer:
         peer_ip = conn.get_remote_address().get_address().to_string()
         peer_port = conn.get_remote_address().get_port()
 
+        if peer_ip in self.downstreamRouterIp:
+            self.logger.error("Advanced host \"%s:%d\" rejected, no connection is allowed between routers." % (peer_ip, peer_port))
+            conn.close()
+            return
+
         bFound = False
         bridgeList = [self.param.managers["lan"].defaultBridge] + [x.get_bridge() for x in self.param.managers["lan"].vpnsPluginList]
         for bridge in bridgeList:
@@ -310,24 +325,16 @@ class _ApiServerProcessor(msghole.EndPoint):
         self.serverObj.sprocList.remove(self)
 
     def on_command_get_network_list(self, data, return_callback, error_callback):
-        try:
-            self.logger.debug("Command \"get-network-list\" received from \"%s:%d\"." % (self.peer_ip, self.peer_port))
-            ret = self.pObj._getNetworkList()
-            self.logger.debug("Command execution completed.")
-            return_callback(ret)
-        except:
-            error_callback("internal error")
-            raise
+        self.logger.debug("Command \"get-network-list\" received from \"%s:%d\"." % (self.peer_ip, self.peer_port))
+        ret = self.pObj._getNetworkList()
+        self.logger.debug("Command execution completed.")
+        return_callback(ret)
 
     def on_command_get_host_list(self, data, return_callback, error_callback):
-        try:
-            self.logger.debug("Command \"get-host-list\" received from \"%s:%d\"." % (self.peer_ip, self.peer_port))
-            ret = self.pObj._getHostList()
-            self.logger.debug("Command execution completed.")
-            return_callback(ret)
-        except:
-            error_callback("internal error")
-            raise
+        self.logger.debug("Command \"get-host-list\" received from \"%s:%d\"." % (self.peer_ip, self.peer_port))
+        ret = self.pObj._getHostList()
+        self.logger.debug("Command execution completed.")
+        return_callback(ret)
 
     def on_notification_host_property_change(self, data):
         self.logger.debug("Notification \"host-property-change\" received from \"%s:%d\"." % (self.peer_ip, self.peer_port))
