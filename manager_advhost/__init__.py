@@ -323,9 +323,9 @@ class _ApiServerProcessor(msghole.EndPoint):
         self.logger.error("Error occured in server processor for advanced host \"%s:%d\"" % (self.peer_ip, self.peer_port), exc_info=True)
 
     def on_close(self):
+        self.serverObj.sprocList.remove(self)
         self.logger.info("Advanced host \"%s:%d\" disconnected." % (self.peer_ip, self.peer_port))
         self.param.managers["lan"].remove_client_property(self.peer_ip, str(self.peer_port))
-        self.serverObj.sprocList.remove(self)
 
     def on_command_get_network_list(self, data, return_callback, error_callback):
         self.logger.debug("Command \"get-network-list\" received from \"%s:%d\"." % (self.peer_ip, self.peer_port))
