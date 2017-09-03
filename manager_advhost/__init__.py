@@ -315,6 +315,7 @@ class _ApiServerProcessor(msghole.EndPoint):
         self.peer_port = conn.get_remote_address().get_port()
 
         super().set_iostream_and_start(conn)
+        self.param.managers["lan"].set_client_property(self.peer_ip, str(self.peer_port), dict())
 
     def on_error(self, e):
         self.logger.error("Error occured in server processor for advanced host \"%s:%d\"" % (self.peer_ip, self.peer_port), exc_info=True)
