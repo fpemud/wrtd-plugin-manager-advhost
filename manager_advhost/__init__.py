@@ -33,7 +33,7 @@ class _PluginObject:
 
         self.clientList = dict()                   # ip-data-dict
 
-        self.downstreamRouterIp = []
+        self.downstreamRouterIpList = []
 
         self.cascadeRouter = dict()                # dict<peer-uuid, list<router-id>>
         self.cascadeLanPrefixListDict = dict()     # dict<router-id, list<lan-prefix>>
@@ -109,12 +109,12 @@ class _PluginObject:
                 raise msghole.BusinessException("no connection is allowed between routers")
 
         # process
-        self.downstreamRouterIp.append(sproc.peer_ip)
+        self.downstreamRouterIpList.append(sproc.peer_ip)
         self._cascadePeerUp(sproc.peer_uuid, data)
 
     def on_cascade_downstream_down(self, sproc):
         self._cascadePeerRouterDown(sproc.peer_uuid)
-        self.downstreamRouterIp.remove(sproc.peer_ip)
+        self.downstreamRouterIpList.remove(sproc.peer_ip)
 
     def on_cascade_downstream_router_add(self, sproc, data):
         self._cascadePeerRouterAdd(sproc.peer_uuid, data)
@@ -277,7 +277,7 @@ class _ApiServer:
         peer_ip = conn.get_remote_address().get_address().to_string()
         peer_port = conn.get_remote_address().get_port()
 
-        if peer_ip in self.downstreamRouterIp:
+        if peer_ip in self.pObj.downstreamRouterIpList:
             self.logger.error("Advanced host \"%s:%d\" rejected, no connection is allowed between routers." % (peer_ip, peer_port))
             conn.close()
             return

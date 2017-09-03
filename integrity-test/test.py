@@ -85,20 +85,20 @@ def command_get_network_list_error_cb(reason):
 
 
 if __name__ == "__main__":
-    print("Progress1")
+    print("Begin")
     sc = Gio.SocketClient.new()
     sc.set_family(Gio.SocketFamily.IPV4)
     sc.set_protocol(Gio.SocketProtocol.TCP)
 
-    print("Progress2")
+    print("Connect to %s:%d" % (getGatewayIpAddress(), 2222))
     conn = sc.connect_to_host(getGatewayIpAddress(), 2222)
 
-    print("Progress3")
+    print("Create client")
     client = Client(conn)
     try:
-        print("Progress4")
+        print("start mainloop")
         idleInvoke(getHostList, client)
         GLib.MainLoop().run()
     finally:
-        print("Progress5")
+        print("Complete")
         client.close()
