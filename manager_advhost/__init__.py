@@ -239,7 +239,7 @@ class _PluginObject:
 
     def _getNetworkList(self):
         ret = set()
-        for bridge in [self.param.managers["lan"].default_bridge] + [x.get_bridge() for x in self.param.mangers["lan"].vpnsPluginList]:
+        for bridge in [self.param.managers["lan"].defaultBridge] + [x.get_bridge() for x in self.param.mangers["lan"].vpnsPluginList]:
             s = bridge.get_prefix()[0] + "/" + bridge.get_prefix()[1]
             ret.add(s)
         for networkList in self.cascadeLanPrefixListDict.values():
