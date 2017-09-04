@@ -78,10 +78,19 @@ def getNetworkList(client):
 
 def command_get_network_list_return_cb(data):
     print("on_command_get_network_list_return: " + json.dumps(data))
+    idleInvoke(setHostProperty, client)
 
 
 def command_get_network_list_error_cb(reason):
     print("on_command_get_network_list_error:" + reason)
+    idleInvoke(setHostProperty, client)
+
+
+def setHostProperty(client):
+    print("setHostProperty")
+    client.send_notification("host-property-change", {
+        "wakeup": True,
+    })
 
 
 if __name__ == "__main__":
