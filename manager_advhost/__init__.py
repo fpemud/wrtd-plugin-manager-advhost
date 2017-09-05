@@ -315,7 +315,10 @@ class _ApiServerProcessor(msghole.EndPoint):
         self.peer_port = conn.get_remote_address().get_port()
 
         super().set_iostream_and_start(conn)
-        self.param.managers["lan"].set_client_property(self.peer_ip, str(self.peer_port), dict())
+        if self._is_local_peer():
+            self.param.managers["lan"].set_property(self._source(), dict())
+        else:
+            self.param.managers["lan"].set_client_property(self.peer_ip, self._source(), dict())
 
     def on_error(self, e):
         if isinstance(e, msghole.PeerCloseError):   # we think this is normal case
@@ -325,7 +328,10 @@ class _ApiServerProcessor(msghole.EndPoint):
     def on_close(self):
         self.serverObj.sprocList.remove(self)
         self.logger.info("Advanced host \"%s:%d\" disconnected." % (self.peer_ip, self.peer_port))
-        self.param.managers["lan"].remove_client_property(self.peer_ip, str(self.peer_port))
+        if self._is_local_peer():
+            self.param.managers["lan"].remove_property(self._source())
+        else:
+            self.param.managers["lan"].remove_client_property(self.peer_ip, self._source())
 
     def on_command_get_network_list(self, data, return_callback, error_callback):
         self.logger.debug("Command \"get-network-list\" received from \"%s:%d\"." % (self.peer_ip, self.peer_port))
@@ -341,5 +347,14 @@ class _ApiServerProcessor(msghole.EndPoint):
 
     def on_notification_host_property_change(self, data):
         self.logger.debug("Notification \"host-property-change\" received from \"%s:%d\"." % (self.peer_ip, self.peer_port))
-        self.param.managers["lan"].set_client_property(self.peer_ip, str(self.peer_port), data)
+        if self._is_local_peer():
+            self.param.managers["lan"].set_property(self._source(), data)
+        else:
+            self.param.managers["lan"].set_client_property(self.peer_ip, self._source(), data)
         self.logger.debug("Notification process completed.")
+
+    def _source(self):
+        return "port%d" % (self.peer_port)
+
+    def _is_local_peer(self):
+        return self.peer_ip.startswith("127.")
