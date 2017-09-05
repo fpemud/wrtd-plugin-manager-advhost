@@ -292,7 +292,7 @@ class _ApiServer:
                 for bridge in bridgeList:
                     netobj = ipaddress.IPv4Network(bridge.get_prefix()[0] + "/" + bridge.get_prefix()[1])
                     if ipaddress.IPv4Address(peer_ip) in netobj:
-                        bridgeIp = netobj.hosts[0]
+                        bridgeIp = str(next(netobj.hosts()))
                         break
                 if bridgeIp is None:
                     self.logger.error("Advanced host \"%s:%d\" rejected, invalid IP address." % (peer_ip, peer_port))
@@ -303,7 +303,7 @@ class _ApiServer:
 
             self.sprocList.append(_ApiServerProcessor(self.pObj, self, conn, bridgeIp))
             self.logger.info("Advanced host \"%s:%d\" connected." % (peer_ip, peer_port))
-        except BaseException:
+        except:
             self.logger.error("Error occured when accepting.", exc_info=True)
         finally:
             self.serverListener.accept_async(None, self._on_accept)
@@ -354,10 +354,10 @@ class _ApiServerProcessor(msghole.EndPoint):
         ret = dict()
         if self.bridgeIp is not None:
             ret[self.bridgeIp] = self.pObj.propDict
-        for ip, data in self.clientList.items():
+        for ip, data in self.pObj.clientList.items():
             if ip != self.peer_ip:
                 ret[ip] = data
-        for clientList in self.cascadeClientListDict.values():
+        for clientList in self.pObj.cascadeClientListDict.values():
             ret.update(clientList)
         self.logger.debug("Command execution completed.")
         return_callback(ret)
