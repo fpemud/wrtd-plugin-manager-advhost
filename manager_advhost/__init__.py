@@ -61,19 +61,22 @@ class _PluginObject:
     def on_property_change(self, data):
         self.propDict = data
         for sproc in self.apiServer.sprocList:
-            sproc.send_notification("host-change", {sproc.bridgeIp: self.propDict})
+            if sproc.bridgeIp is not None:
+                sproc.send_notification("host-change", {sproc.bridgeIp: self.propDict})
 
     def on_client_add(self, source_id, ip_data_dict):
         assert len(ip_data_dict) > 0
         self.clientList.update(ip_data_dict)
         for sproc in self.apiServer.sprocList:
-            sproc.send_notification("host-add", ip_data_dict)
+            if sproc.bridgeIp is not None:
+                sproc.send_notification("host-add", ip_data_dict)
 
     def on_client_change(self, source_id, ip_data_dict):
         assert len(ip_data_dict) > 0
         self.clientList.update(ip_data_dict)
         for sproc in self.apiServer.sprocList:
-            sproc.send_notification("host-change", ip_data_dict)
+            if sproc.bridgeIp is not None:
+                sproc.send_notification("host-change", ip_data_dict)
 
     def on_client_remove(self, source_id, ip_list):
         assert len(ip_list) > 0
@@ -85,7 +88,8 @@ class _PluginObject:
                 sproc.close()
 
         for sproc in self.apiServer.sprocList:
-            sproc.send_notification("host-remove", ip_list)
+            if sproc.peer_ip not in ip_list:
+                sproc.send_notification("host-remove", ip_list)
 
     def on_cascade_upstream_up(self, api_client, data):
         self._cascadePeerUp(api_client.peer_uuid, data)
@@ -181,10 +185,12 @@ class _PluginObject:
         # send notification
         if bLanPrefixListChanged:
             for sproc in self.apiServer.sprocList:
-                sproc.send_notification("network-list-change", self._getNetworkList())
+                if sproc.bridgeIp is not None:
+                    sproc.send_notification("network-list-change", self._getNetworkList())
         if clientData != []:
             for sproc in self.apiServer.sprocList:
-                sproc.send_notification("host-remove", clientData)
+                if sproc.peer_ip not in clientData:
+                    sproc.send_notification("host-remove", clientData)
 
     def _cascadePeerRouterLanPrefixListChange(self, peer_uuid, data):
         # update lan prefix list
@@ -201,7 +207,8 @@ class _PluginObject:
         # send notification
         if bChanged:
             for sproc in self.apiServer.sprocList:
-                sproc.send_notification("network-list-change", self._getNetworkList())
+                if sproc.bridgeIp is not None:
+                    sproc.send_notification("network-list-change", self._getNetworkList())
 
     def _cascadePeerRouterClientAdd(self, peer_uuid, data):
         # update client list, get notification data
@@ -217,7 +224,8 @@ class _PluginObject:
         # send notification
         if len(data3) > 0:
             for sproc in self.apiServer.sprocList:
-                sproc.send_notification("host-add", data3)
+                if sproc.peer_ip not in data3:
+                    sproc.send_notification("host-add", data3)
 
     def _cascadePeerRouterClientChange(self, peer_uuid, data):
         assert len(data) > 0
@@ -230,7 +238,8 @@ class _PluginObject:
 
         # send notification
         for sproc in self.apiServer.sprocList:
-            sproc.send_notification("host-change", data3)
+            if sproc.peer_ip not in data3:
+                sproc.send_notification("host-change", data3)
 
     def _cascadePeerRouterClientRemove(self, peer_uuid, data):
         assert len(data) > 0
@@ -244,7 +253,8 @@ class _PluginObject:
 
         # send notification
         for sproc in self.apiServer.sprocList:
-            sproc.send_notification("host-remove", data3)
+            if sproc.peer_ip not in data3:
+                sproc.send_notification("host-remove", data3)
 
     def _getNetworkList(self):
         ret = set()
