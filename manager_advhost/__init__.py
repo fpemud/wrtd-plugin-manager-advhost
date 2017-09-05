@@ -46,7 +46,7 @@ class _PluginObject:
         try:
             self.apiServer = _ApiServer(self)
             self.logger.info("ADVHOST-API server started.")
-        except:
+        except BaseException:
             self.dispose()
             raise
 
@@ -276,34 +276,37 @@ class _ApiServer:
         self.serverListener.close()
 
     def _on_accept(self, source_object, res):
-        conn, dummy = source_object.accept_finish(res)
-        peer_ip = conn.get_remote_address().get_address().to_string()
-        peer_port = conn.get_remote_address().get_port()
+        try:
+            conn, dummy = source_object.accept_finish(res)
+            peer_ip = conn.get_remote_address().get_address().to_string()
+            peer_port = conn.get_remote_address().get_port()
 
-        if peer_ip in self.pObj.downstreamRouterIpList:
-            self.logger.error("Advanced host \"%s:%d\" rejected, no connection is allowed between routers." % (peer_ip, peer_port))
-            conn.close()
-            return
-
-        if not peer_ip.startswith("127."):
-            bridgeIp = None
-            bridgeList = [self.param.managers["lan"].defaultBridge] + [x.get_bridge() for x in self.param.managers["lan"].vpnsPluginList]
-            for bridge in bridgeList:
-                netobj = ipaddress.IPv4Network(bridge.get_prefix()[0] + "/" + bridge.get_prefix()[1])
-                if ipaddress.IPv4Address(peer_ip) in netobj:
-                    bridgeIp = netobj.hosts[0]
-                    break
-            if bridgeIp is None:
-                self.logger.error("Advanced host \"%s:%d\" rejected, invalid IP address." % (peer_ip, peer_port))
+            if peer_ip in self.pObj.downstreamRouterIpList:
+                self.logger.error("Advanced host \"%s:%d\" rejected, no connection is allowed between routers." % (peer_ip, peer_port))
                 conn.close()
                 return
-        else:
-            bridgeIp = None
 
-        self.sprocList.append(_ApiServerProcessor(self.pObj, self, conn, bridgeIp))
-        self.logger.info("Advanced host \"%s:%d\" connected." % (peer_ip, peer_port))
+            if not peer_ip.startswith("127."):
+                bridgeIp = None
+                bridgeList = [self.param.managers["lan"].defaultBridge] + [x.get_bridge() for x in self.param.managers["lan"].vpnsPluginList]
+                for bridge in bridgeList:
+                    netobj = ipaddress.IPv4Network(bridge.get_prefix()[0] + "/" + bridge.get_prefix()[1])
+                    if ipaddress.IPv4Address(peer_ip) in netobj:
+                        bridgeIp = netobj.hosts[0]
+                        break
+                if bridgeIp is None:
+                    self.logger.error("Advanced host \"%s:%d\" rejected, invalid IP address." % (peer_ip, peer_port))
+                    conn.close()
+                    return
+            else:
+                bridgeIp = None
 
-        self.serverListener.accept_async(None, self._on_accept)
+            self.sprocList.append(_ApiServerProcessor(self.pObj, self, conn, bridgeIp))
+            self.logger.info("Advanced host \"%s:%d\" connected." % (peer_ip, peer_port))
+        except BaseException:
+            self.logger.error("Error occured when accepting.", exc_info=True)
+        finally:
+            self.serverListener.accept_async(None, self._on_accept)
 
 
 class _ApiServerProcessor(msghole.EndPoint):
@@ -351,7 +354,7 @@ class _ApiServerProcessor(msghole.EndPoint):
         ret = dict()
         if self.bridgeIp is not None:
             ret[self.bridgeIp] = self.pObj.propDict
-        for ip, data in self.clientList:
+        for ip, data in self.clientList.items():
             if ip != self.peer_ip:
                 ret[ip] = data
         for clientList in self.cascadeClientListDict.values():
