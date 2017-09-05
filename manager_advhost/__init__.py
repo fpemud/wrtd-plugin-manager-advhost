@@ -82,7 +82,7 @@ class _PluginObject:
         self._cascadePeerUp(api_client.peer_uuid, data)
 
     def on_cascade_upstream_down(self, api_client):
-        self._cascadePeerRouterDown(api_client.peer_uuid)
+        self._cascadePeerDown(api_client.peer_uuid)
 
     def on_cascade_upstream_router_add(self, api_client, data):
         self._cascadePeerRouterAdd(api_client.peer_uuid, data)
@@ -113,7 +113,7 @@ class _PluginObject:
         self._cascadePeerUp(sproc.peer_uuid, data)
 
     def on_cascade_downstream_down(self, sproc):
-        self._cascadePeerRouterDown(sproc.peer_uuid)
+        self._cascadePeerDown(sproc.peer_uuid)
         self.downstreamRouterIpList.remove(sproc.peer_ip)
 
     def on_cascade_downstream_router_add(self, sproc, data):
@@ -138,7 +138,7 @@ class _PluginObject:
         self.cascadeRouter[peer_uuid] = []
         self._cascadePeerRouterAdd(peer_uuid, data)
 
-    def _cascasdePeerDown(self, peer_uuid):
+    def _cascadePeerDown(self, peer_uuid):
         self._cascadePeerRouterRemove(peer_uuid, self.cascadeRouter[peer_uuid])
         del self.cascadeRouter[peer_uuid]
 
