@@ -68,14 +68,14 @@ class _PluginObject:
         assert len(ip_data_dict) > 0
         self.clientList.update(ip_data_dict)
         for sproc in self.apiServer.sprocList:
-            if sproc.bridgeIp is not None:
+            if sproc.peer_ip not in ip_data_dict:
                 sproc.send_notification("host-add", ip_data_dict)
 
     def on_client_change(self, source_id, ip_data_dict):
         assert len(ip_data_dict) > 0
         self.clientList.update(ip_data_dict)
         for sproc in self.apiServer.sprocList:
-            if sproc.bridgeIp is not None:
+            if sproc.peer_ip not in ip_data_dict:
                 sproc.send_notification("host-change", ip_data_dict)
 
     def on_client_remove(self, source_id, ip_list):
