@@ -31,13 +31,17 @@ class _PluginObject:
         self.apiPort = 2222
         self.apiServer = None
 
-        self.clientList = dict()                   # ip-data-dict
+        self.propDict = dict()
+        for pd in self.param.managers["lan"].propDict.values():
+            self.propDict.update(pd)
+
+        self.clientList = dict()                    # ip-data-dict
 
         self.downstreamRouterIpList = []
 
-        self.cascadeRouter = dict()                # dict<peer-uuid, list<router-id>>
-        self.cascadeLanPrefixListDict = dict()     # dict<router-id, list<lan-prefix>>
-        self.cascadeClientListDict = dict()        # dict<router-id, client-ip-data-dict>
+        self.cascadeRouter = dict()                 # dict<peer-uuid, list<router-id>>
+        self.cascadeLanPrefixListDict = dict()      # dict<router-id, list<lan-prefix>>
+        self.cascadeClientListDict = dict()         # dict<router-id, client-ip-data-dict>
 
         try:
             self.apiServer = _ApiServer(self)
@@ -53,6 +57,11 @@ class _PluginObject:
 
     def get_router_info(self):
         return dict()
+
+    def on_property_change(self, data):
+        self.propDict = data
+        for sproc in self.apiServer.sprocList:
+            sproc.send_notification("host-change", {sproc.bridgeIp: self.propDict})
 
     def on_client_add(self, source_id, ip_data_dict):
         assert len(ip_data_dict) > 0
@@ -149,7 +158,7 @@ class _PluginObject:
         self._cascadePeerRouterClientAdd(peer_uuid, data)
 
     def _cascadePeerRouterRemove(self, peer_uuid, data):
-        # update router id list
+        # update router id listcascadeClientListDict
         for router_id in data:
             self.cascadeRouter[peer_uuid].remove(router_id)
 
@@ -183,8 +192,8 @@ class _PluginObject:
         for router_id, data2 in data.items():
             if "lan-prefix-list" not in data2:
                 continue                            # may be called from on_cascade_upstream_router_add
-            if router_id in self.cascadeClientListDict:
-                if set(self.cascadeClientListDict[router_id]) == set(data2["lan-prefix-list"]):
+            if router_id in self.cascadeLanPrefixListDict:
+                if set(self.cascadeLanPrefixListDict[router_id]) == set(data2["lan-prefix-list"]):
                     continue
             self.cascadeLanPrefixListDict[router_id] = data2["lan-prefix-list"]
             bChanged = True
@@ -246,12 +255,6 @@ class _PluginObject:
             ret |= set(networkList)
         return list(ret)
 
-    def _getHostList(self):
-        ret = self.clientList.copy()
-        for clientList in self.cascadeClientListDict.values():
-            ret.update(clientList)
-        return ret
-
 
 class _ApiServer:
 
@@ -282,19 +285,22 @@ class _ApiServer:
             conn.close()
             return
 
-        bFound = False
-        bridgeList = [self.param.managers["lan"].defaultBridge] + [x.get_bridge() for x in self.param.managers["lan"].vpnsPluginList]
-        for bridge in bridgeList:
-            netobj = ipaddress.IPv4Network(bridge.get_prefix()[0] + "/" + bridge.get_prefix()[1])
-            if ipaddress.IPv4Address(peer_ip) in netobj:
-                bFound = True
-                break
-        if not bFound:
-            self.logger.error("Advanced host \"%s:%d\" rejected, invalid IP address." % (peer_ip, peer_port))
-            conn.close()
-            return
+        if not peer_ip.startswith("127."):
+            bridgeIp = None
+            bridgeList = [self.param.managers["lan"].defaultBridge] + [x.get_bridge() for x in self.param.managers["lan"].vpnsPluginList]
+            for bridge in bridgeList:
+                netobj = ipaddress.IPv4Network(bridge.get_prefix()[0] + "/" + bridge.get_prefix()[1])
+                if ipaddress.IPv4Address(peer_ip) in netobj:
+                    bridgeIp = netobj.hosts[0]
+                    break
+            if bridgeIp is None:
+                self.logger.error("Advanced host \"%s:%d\" rejected, invalid IP address." % (peer_ip, peer_port))
+                conn.close()
+                return
+        else:
+            bridgeIp = None
 
-        self.sprocList.append(_ApiServerProcessor(self.pObj, self, conn))
+        self.sprocList.append(_ApiServerProcessor(self.pObj, self, conn, bridgeIp))
         self.logger.info("Advanced host \"%s:%d\" connected." % (peer_ip, peer_port))
 
         self.serverListener.accept_async(None, self._on_accept)
@@ -302,12 +308,13 @@ class _ApiServer:
 
 class _ApiServerProcessor(msghole.EndPoint):
 
-    def __init__(self, pObj, serverObj, conn):
+    def __init__(self, pObj, serverObj, conn, bridgeIp):
         super().__init__()
 
         self.pObj = pObj
         self.param = pObj.param
         self.logger = pObj.logger
+        self.bridgeIp = bridgeIp
 
         self.serverObj = serverObj
 
@@ -341,7 +348,14 @@ class _ApiServerProcessor(msghole.EndPoint):
 
     def on_command_get_host_list(self, data, return_callback, error_callback):
         self.logger.debug("Command \"get-host-list\" received from \"%s:%d\"." % (self.peer_ip, self.peer_port))
-        ret = self.pObj._getHostList()
+        ret = dict()
+        if self.bridgeIp is not None:
+            ret[self.bridgeIp] = self.pObj.propDict
+        for ip, data in self.clientList:
+            if ip != self.peer_ip:
+                ret[ip] = data
+        for clientList in self.cascadeClientListDict.values():
+            ret.update(clientList)
         self.logger.debug("Command execution completed.")
         return_callback(ret)
 
